@@ -2,9 +2,8 @@
 FROM ubuntu AS linux_builder
 
 # Install required build dependencies for the Linux kernel
-RUN apt-get update && apt-get install -y build-essential wget tar xz-utils openssl libssl-dev elfutils-dev flex bison
+RUN apt-get update && apt-get install -y --no-install-recommends build-essential wget tar xz-utils openssl libssl-dev elfutils-dev flex bison libelf-dev bc libncurses-dev curl
 
-# Set the working directory
 WORKDIR /linux
 
 # Download and extract the Linux kernel source code
