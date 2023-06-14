@@ -1,0 +1,51 @@
+# Stage 1: Build Linux kernel
+FROM alpine AS linux_builder
+
+# Install required build dependencies for the Linux kernel
+RUN apk update && apk add --no-cache build-base linux-headers wget tar xz openssl-dev elfutils-dev flex bison
+
+# Set the working directory
+WORKDIR /linux
+
+# Download and extract the Linux kernel source code
+RUN wget https://cdn.kernel.org/pub/linux/kernel/v5.x/linux-5.14.tar.xz && \
+    tar -xf linux-5.14.tar.xz
+
+# Enter the Linux kernel source code directory
+WORKDIR /linux/linux-5.14
+
+# Configure and build the Linux kernel
+RUN make defconfig && \
+    make -j$(nproc)
+
+# Stage 2: Build Busybox
+FROM alpine AS busybox_builder
+
+# Install required build dependencies for Busybox
+RUN apk update && apk add --no-cache build-base wget tar openssl-dev flex bison
+
+# Set the working directory
+WORKDIR /busybox
+
+# Download and extract the Busybox source code
+RUN wget https://busybox.net/downloads/busybox-1.34.0.tar.bz2 && \
+    tar -xf busybox-1.34.0.tar.bz2
+
+# Enter the Busybox source code directory
+WORKDIR /busybox/busybox-1.34.0
+
+# Configure and build Busybox
+RUN make defconfig && \
+    make -j$(nproc)
+
+# Stage 3: Create the final image
+FROM alpine
+
+# Copy the Linux kernel image from the Linux builder stage
+COPY --from=linux_builder /linux/linux-5.14/arch/x86/boot/bzImage /bzImage
+
+# Copy the Busybox binary from the Busybox builder stage
+COPY --from=busybox_builder /busybox/busybox-1.34.0/busybox /busybox
+
+# Set the entry point to an empty command
+ENTRYPOINT []
