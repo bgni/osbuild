@@ -1,8 +1,8 @@
 # Stage 1: Build Linux kernel
-FROM alpine AS linux_builder
+FROM ubuntu AS linux_builder
 
 # Install required build dependencies for the Linux kernel
-RUN apk update && apk add --no-cache build-base linux-headers wget tar xz openssl-dev elfutils-dev flex bison
+RUN apt-get update && apt-get install -y build-essential wget tar xz-utils openssl libssl-dev elfutils-dev flex bison
 
 # Set the working directory
 WORKDIR /linux
@@ -22,10 +22,10 @@ RUN make defconfig && \
 RUN cp arch/x86/include/asm/inat.h tools/arch/x86/include/asm/inat.h
 
 # Stage 2: Build Busybox
-FROM alpine AS busybox_builder
+FROM ubuntu AS busybox_builder
 
 # Install required build dependencies for Busybox
-RUN apk update && apk add --no-cache build-base wget tar openssl-dev flex bison
+RUN apt-get update && apt-get install -y build-essential wget tar openssl libssl-dev flex bison
 
 # Set the working directory
 WORKDIR /busybox
@@ -44,7 +44,7 @@ RUN make defconfig && \
     make
 
 # Stage 3: Create the final image
-FROM alpine
+FROM ubuntu
 
 # Copy the Linux kernel image from the Linux builder stage
 COPY --from=linux_builder /linux/linux-5.14/arch/x86/boot/bzImage /bzImage
