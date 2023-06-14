@@ -1,55 +1,58 @@
-# Stage 1: Build Linux kernel
-FROM ubuntu AS linux_builder
+# Dockerfile for building Linux kernel and BusyBox
 
-# Install required build dependencies for the Linux kernel
-RUN apt-get update && apt-get install -y --no-install-recommends build-essential wget tar xz-utils openssl libssl-dev elfutils flex bison libelf-dev bc libncurses-dev curl
+# Stage 1: Build the Linux kernel and BusyBox
+FROM ubuntu:latest AS builder
 
-WORKDIR /linux
-
-# Download and extract the Linux kernel source code
-RUN wget https://cdn.kernel.org/pub/linux/kernel/v5.x/linux-5.14.tar.xz && \
-    tar -xf linux-5.14.tar.xz
-
-# Enter the Linux kernel source code directory
-WORKDIR /linux/linux-5.14
-
-# Configure and build the Linux kernel
-RUN make defconfig && \
-    make -j$(nproc)
-
-# Update the Kernel ABI header file in the tools directory
-RUN cp arch/x86/include/asm/inat.h tools/arch/x86/include/asm/inat.h
-
-# Stage 2: Build Busybox
-FROM ubuntu AS busybox_builder
-
-# Install required build dependencies for Busybox
-RUN apt-get update && apt-get install -y build-essential wget tar openssl libssl-dev flex bison
+# Install necessary build dependencies
+RUN apt-get update && apt-get install -y \
+    wget \
+    build-essential \
+    libssl-dev \
+    bc \
+    flex \
+    bison \
+    libelf-dev \
+    libncurses-dev \
+    cpio
 
 # Set the working directory
-WORKDIR /busybox
+WORKDIR /build
 
-# Download and extract the Busybox source code
-RUN wget https://busybox.net/downloads/busybox-1.34.0.tar.bz2 && \
-    tar -xf busybox-1.34.0.tar.bz2
+# Check if the Linux kernel source code is already present
+RUN [ -f "linux-5.14.tar.xz" ] || wget https://cdn.kernel.org/pub/linux/kernel/v5.x/linux-5.14.tar.xz
+RUN [ -d "linux-5.14" ] || tar -xf linux-5.14.tar.xz
 
-# Enter the Busybox source code directory
-WORKDIR /busybox/busybox-1.34.0
+# Change into the Linux kernel source code directory
+WORKDIR /build/linux-5.14
 
-# Configure and build Busybox
-RUN make defconfig && \
-    make -j$(nproc) && \
-    sed -i '/^CONFIG_FEATURE_DIFF=y/s/^/# /' .config && \
-    make
+# Build the kernel with tinyconfig
+RUN make tinyconfig
+RUN make -j$(nproc)
 
-# Stage 3: Create the final image
-FROM ubuntu
+# Check if the BusyBox source code is already present
+RUN [ -f "busybox-1.34.1.tar.bz2" ] || wget https://busybox.net/downloads/busybox-1.34.1.tar.bz2
+RUN [ -d "busybox-1.34.1" ] || tar -xf busybox-1.34.1.tar.bz2
 
-# Copy the Linux kernel image from the Linux builder stage
-COPY --from=linux_builder /linux/linux-5.14/arch/x86/boot/bzImage /bzImage
+# Change into the BusyBox source code directory
+WORKDIR /build/busybox-1.34.1
 
-# Copy the Busybox binary from the Busybox builder stage
-COPY --from=busybox_builder /busybox/busybox-1.34.0/busybox /busybox
+# Build BusyBox with default configuration
+RUN make defconfig
+RUN make -j$(nproc)
+RUN make install
 
-# Set the entry point to an empty command
-ENTRYPOINT []
+# Stage 2: Create the bootable disk image
+FROM scratch
+
+# Set the necessary environment variables
+ENV PATH="/bin"
+ENV TERM="xterm"
+
+# Copy the compiled BusyBox binaries from the builder stage
+COPY --from=builder /build/busybox-1.34.1/_install/bin/busybox /bin/busybox
+
+# Copy the compiled Linux kernel image from the builder stage
+COPY --from=builder /build/linux-5.14/arch/x86/boot/bzImage /boot/vmlinuz
+
+# Set the entrypoint to the BusyBox binary
+ENTRYPOINT ["/bin/busybox"]
