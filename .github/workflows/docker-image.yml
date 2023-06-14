@@ -14,7 +14,7 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Build Docker Image
-        run: docker build -t qemu_linux .
+        run: docker build -t qemu_linux -f Dockerfile.linuxbusybox .
 
       - name: Start QEMU and Redirect Output
         run: docker run -d --rm --name qemu_container qemu_linux qemu-system-x86_64 -kernel /boot/vmlinuz -nographic -append "root=/dev/sda init=/bin/busybox sh -c 'ls /' > output.txt"
