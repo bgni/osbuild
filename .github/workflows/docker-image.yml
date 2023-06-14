@@ -1,5 +1,4 @@
-name: Docker Image CI
-
+name: Docker Image Build and Test 
 on:
   push:
     branches: [ "master" ]
@@ -7,12 +6,16 @@ on:
     branches: [ "master" ]
 
 jobs:
-
   build:
-
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v3
-    - name: Build the Docker image
-      run: docker build . --file Dockerfile.linuxbusybox --tag my-image-name:$(date +%s)
+      - name: Checkout Repository
+        uses: actions/checkout@v2
+
+      - name: Build Docker Image
+        run: docker build . --file Dockerfile.linuxbusybox --tag qemu_linux:$(date +%s)
+
+      - name: Start QEMU
+        run: docker run -it --rm qemu_linux qemu-system-x86_64 -kernel /boot/vmlinuz -nographic -append "root=/dev/sda init=/bin/busybox sh -c 'ls /'"
+
