@@ -18,6 +18,9 @@ WORKDIR /linux/linux-5.14
 RUN make defconfig && \
     make -j$(nproc)
 
+# Update the Kernel ABI header file in the tools directory
+RUN cp arch/x86/include/asm/inat.h tools/arch/x86/include/asm/inat.h
+
 # Stage 2: Build Busybox
 FROM alpine AS busybox_builder
 
@@ -36,7 +39,9 @@ WORKDIR /busybox/busybox-1.34.0
 
 # Configure and build Busybox
 RUN make defconfig && \
-    make -j$(nproc)
+    make -j$(nproc) && \
+    sed -i '/^CONFIG_FEATURE_DIFF=y/s/^/# /' .config && \
+    make
 
 # Stage 3: Create the final image
 FROM alpine
