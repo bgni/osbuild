@@ -29,6 +29,9 @@ WORKDIR /build/linux-5.14
 RUN make tinyconfig
 RUN make -j$(nproc)
 
+# Set the working directory
+WORKDIR /build
+
 # Check if the BusyBox source code is already present
 RUN [ -f "busybox-1.34.1.tar.bz2" ] || wget https://busybox.net/downloads/busybox-1.34.1.tar.bz2
 RUN [ -d "busybox-1.34.1" ] || tar -xf busybox-1.34.1.tar.bz2
