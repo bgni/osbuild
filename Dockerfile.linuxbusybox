@@ -2,7 +2,7 @@
 FROM ubuntu AS linux_builder
 
 # Install required build dependencies for the Linux kernel
-RUN apt-get update && apt-get install -y --no-install-recommends build-essential wget tar xz-utils openssl libssl-dev elfutils-dev flex bison libelf-dev bc libncurses-dev curl
+RUN apt-get update && apt-get install -y --no-install-recommends build-essential wget tar xz-utils openssl libssl-dev elfutils flex bison libelf-dev bc libncurses-dev curl
 
 WORKDIR /linux
 
