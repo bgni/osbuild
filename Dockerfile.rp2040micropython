@@ -1,0 +1,24 @@
+# Use the official Python image as the base image
+FROM python:3.9-slim
+
+# Set the working directory inside the container
+WORKDIR /micropython
+
+# Install required dependencies
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    git \
+    unzip
+
+# Clone the MicroPython repository
+RUN git clone --recurse-submodules https://github.com/micropython/micropython.git .
+
+# Switch to the desired branch or tag (replace with your preferred version)
+RUN git checkout origin/master
+
+# Configure the build for Raspberry Pi Pico 2040
+RUN make -C mpy-cross && \
+    BOARD=raspberrypi_pico make -C ports/raspberrypi
+
+# Set the entry point to start the build process
+ENTRYPOINT ["make", "-C", "ports/raspberrypi", "deploy"]
