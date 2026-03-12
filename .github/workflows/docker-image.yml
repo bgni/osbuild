@@ -11,7 +11,7 @@ jobs:
 
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v6.0.2
 
       - name: Build Docker Image
         run: docker build -t qemu_linux -f Dockerfile.linuxbusybox .
